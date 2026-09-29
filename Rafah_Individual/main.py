@@ -2,6 +2,8 @@ from patient import Patient
 import matplotlib.pyplot as plt
 import pandas as pd
 import statistics
+from scipy import stats
+import numpy as np
 
 # Loads the csv file and saves it into the dataframe variable 'df'
 df = pd.read_csv('Dataset/Metadata and Protein Data for Module 1.csv')
@@ -48,6 +50,20 @@ def main():
     male_abeta42 = [p.abeta42 for p in dementia_patients if p.sex == 'Male']
     means = [statistics.mean(female_abeta42), statistics.mean(male_abeta42)]
 
+    t_stat, p_val = stats.ttest_ind(female_abeta42, male_abeta42, equal_var=False)
+
+    print("--- Independent Samples t-Test (Female vs Male Abeta42) ---")
+    print(f"Female sample size: {len(female_abeta42)} | Mean: {statistics.mean(female_abeta42):.2f}")
+    print(f"Male sample size:   {len(male_abeta42)} | Mean: {statistics.mean(male_abeta42):.2f}")
+    print(f"t-statistic: {t_stat:.4f}")
+    print(f"p-value:     {p_val:.4e}")
+
+    alpha = 0.05
+    if p_val < alpha:
+        print("Result: Statistically significant difference between sexes (p < 0.05)")
+    else:
+        print("Result: No statistically significant difference between sexes (p >= 0.05)")
+
     stdevs = [statistics.stdev(female_abeta42), statistics.stdev(male_abeta42)]
     fig, ax = plt.subplots(figsize=(6, 5))
     ax.bar(['Female', 'Male'], means, yerr=stdevs, capsize=5, color=['pink',
@@ -56,6 +72,7 @@ def main():
     ax.set_title('Mean Abeta 42 Levels by Sex in Dementia Patients (+/- SD)')
     plt.tight_layout()
     plt.show()
+
     # Creates the Scatter Plot
     ages = [p.age_at_death for p in patients]
     abeta42_all = [p.abeta42 for p in patients]
@@ -66,6 +83,32 @@ def main():
     ax.set_title('Abeta 42 Levels vs Age at Death')
     plt.tight_layout()
     plt.show()
+
+    # Creates the Scatter Plot
+    ages = [p.age_at_death for p in patients]
+    abeta42_all = [p.abeta42 for p in patients]
+
+    # Linear regression
+    slope, intercept, r_value, p_value, std_err = stats.linregress(ages, abeta42_all)
+    r_squared = r_value ** 2
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.scatter(ages, abeta42_all, color='purple', alpha=0.6)
+
+    x_line = np.array([min(ages), max(ages)])
+    y_line = slope * x_line + intercept
+    ax.plot(x_line, y_line, color='black', linewidth=2, linestyle='--',
+            label=f'y = {slope:.3f}x + {intercept:.3f}\n$R^2$ = {r_squared:.3f}')
+
+    ax.set_xlabel('Age at Death')
+    ax.set_ylabel('Abeta42 (pg/ug)')
+    ax.set_title('Abeta 42 Levels vs Age at Death')
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+    print(f"Equation: y = {slope:.4f}x + {intercept:.4f}")
+    print(f"R-squared: {r_squared:.4f}")
 
 # Required to make graphs appear when running the script directly. This block ensures that the main function is executed only when the script is run as the main program, and not when it is imported as a module in another script.
 if __name__ == "__main__":
